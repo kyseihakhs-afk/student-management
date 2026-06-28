@@ -1,0 +1,863 @@
+<!doctype html>
+<html lang="en" class="layout-menu-fixed layout-compact" data-assets-path="../assets/" data-template="vertical-menu-template-free">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+    <title>គ្រប់គ្រងសិស្ស | Student Management</title>
+    <meta name="description" content="" />
+    <link rel="icon" type="image/x-icon" href="assets/img/favicon/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/vendor/fonts/iconify-icons.css" />
+    <link rel="stylesheet" href="assets/vendor/fonts/boxicons.css" />
+    <link rel="stylesheet" href="assets/vendor/css/core.css" class="template-customizer-core-css" />
+    <link rel="stylesheet" href="assets/vendor/css/theme-default.css" class="template-customizer-theme-css" />
+    <link rel="stylesheet" href="assets/css/demo.css" />
+    <link rel="stylesheet" href="assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+    <script src="assets/vendor/js/helpers.js"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+      .student-form-card { border-radius: 12px; }
+      .table th { background-color: #f5f5f9; font-weight: 600; }
+      .badge-active { background-color: #28a745; }
+      .action-btn { cursor: pointer; border: none; background: none; padding: 4px 8px; border-radius: 6px; }
+      .btn-edit { color: #696cff; }
+      .btn-delete { color: #ff3e1d; }
+      .btn-edit:hover { background: #e8e8ff; }
+      .btn-delete:hover { background: #ffe8e4; }
+      .modal-overlay {
+        display: none; position: fixed; top: 0; left: 0;
+        width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+        z-index: 9999; justify-content: center; align-items: center;
+      }
+      .modal-overlay.active { display: flex; }
+      .modal-box {
+        background: #fff; border-radius: 12px; padding: 30px;
+        width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      }
+      .modal-header-custom { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+      .close-modal { cursor: pointer; font-size: 24px; color: #888; border: none; background: none; }
+      .close-modal:hover { color: #333; }
+      .toast-msg {
+        position: fixed; bottom: 30px; right: 30px;
+        background: #28a745; color: #fff; padding: 14px 24px;
+        border-radius: 10px; font-size: 15px; z-index: 99999;
+        display: none; box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      }
+      .toast-msg.error { background: #ff3e1d; }
+      .toast-msg.show { display: block; animation: fadeIn 0.3s ease; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      .stat-card { border-radius: 12px; padding: 20px; color: #fff; }
+      .stat-card.blue { background: linear-gradient(135deg, #696cff, #9b9ef9); }
+      .stat-card.green { background: linear-gradient(135deg, #28a745, #5ed87a); }
+      .stat-card.orange { background: linear-gradient(135deg, #fd7e14, #fdb96a); }
+      .stat-card.red { background: linear-gradient(135deg, #ff3e1d, #ff9a8a); }
+      .stat-number { font-size: 2rem; font-weight: 700; }
+      .stat-label { font-size: 0.85rem; opacity: 0.85; }
+      .empty-state { text-align: center; padding: 60px 20px; color: #aaa; }
+      .empty-state i { font-size: 48px; margin-bottom: 16px; display: block; }
+      .confirm-overlay {
+        display: none; position: fixed; top: 0; left: 0;
+        width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+        z-index: 99998; justify-content: center; align-items: center;
+      }
+      .confirm-overlay.active { display: flex; }
+      .confirm-box {
+        background: #fff; border-radius: 12px; padding: 30px;
+        width: 90%; max-width: 400px; text-align: center;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="layout-wrapper layout-content-navbar">
+      <div class="layout-container">
+
+        <!-- Sidebar -->
+        <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+          <div class="app-brand demo">
+            <a href="index.html" class="app-brand-link">
+              <span class="app-brand-logo demo">
+                <span class="text-primary">
+                  <svg width="25" viewBox="0 0 25 42" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                    <defs>
+                      <path d="M13.7918663,0.358365126 L3.39788168,7.44174259 C0.566865006,9.69408886 -0.379795268,12.4788597 0.557900856,15.7960551 C0.68998853,16.2305145 1.09562888,17.7872135 3.12357076,19.2293357 C3.8146334,19.7207684 5.32369333,20.3834223 7.65075054,21.2172976 L7.59773219,21.2525164 L2.63468769,24.5493413 C0.445452254,26.3002124 0.0884951797,28.5083815 1.56381646,31.1738486 C2.83770406,32.8170431 5.20850219,33.2640127 7.09180128,32.5391577 C8.347334,32.0559211 11.4559176,30.0011079 16.4175519,26.3747182 C18.0338572,24.4997857 18.6973423,22.4544883 18.4080071,20.2388261 C17.963753,17.5346866 16.1776345,15.5799961 13.0496516,14.3747546 L10.9194936,13.4715819 L18.6192054,7.984237 L13.7918663,0.358365126 Z" id="path-1"></path>
+                      <path d="M5.47320593,6.00457225 C4.05321814,8.216144 4.36334763,10.0722806 6.40359441,11.5729822 C8.61520715,12.571656 10.0999176,13.2171421 10.8577257,13.5094407 L15.5088241,14.433041 L18.6192054,7.984237 C15.5364148,3.11535317 13.9273018,0.573395879 13.7918663,0.358365126 C13.5790555,0.511491653 10.8061687,2.3935607 5.47320593,6.00457225 Z" id="path-3"></path>
+                      <path d="M7.50063644,21.2294429 L12.3234468,23.3159332 C14.1688022,24.7579751 14.397098,26.4880487 13.008334,28.506154 C11.6195701,30.5242593 10.3099883,31.790241 9.07958868,32.3040991 C5.78142938,33.4346997 4.13234973,34 4.13234973,34 C4.13234973,34 2.75489982,33.0538207 2.37032616e-14,31.1614621 C-0.55822714,27.8186216 -0.55822714,26.0572515 -4.05231404e-15,25.8773518 C0.83734071,25.6075023 2.77988457,22.8248993 3.3049379,22.52991 C3.65497346,22.3332504 5.05353963,21.8997614 7.50063644,21.2294429 Z" id="path-4"></path>
+                      <path d="M20.6,7.13333333 L25.6,13.8 C26.2627417,14.6836556 26.0836556,15.9372583 25.2,16.6 C24.8538077,16.8596443 24.4327404,17 24,17 L14,17 C12.8954305,17 12,16.1045695 12,15 C12,14.5672596 12.1403557,14.1461923 12.4,13.8 L17.4,7.13333333 C18.0627417,6.24967773 19.3163444,6.07059163 20.2,6.73333333 C20.3516113,6.84704183 20.4862915,6.981722 20.6,7.13333333 Z" id="path-5"></path>
+                    </defs>
+                    <g id="g-app-brand" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                      <g id="Brand-Logo" transform="translate(-27.000000, -15.000000)">
+                        <g id="Icon" transform="translate(27.000000, 15.000000)">
+                          <g id="Mask" transform="translate(0.000000, 8.000000)">
+                            <mask id="mask-2" fill="white"><use xlink:href="#path-1"></use></mask>
+                            <use fill="currentColor" xlink:href="#path-1"></use>
+                            <g id="Path-3" mask="url(#mask-2)">
+                              <use fill="currentColor" xlink:href="#path-3"></use>
+                              <use fill-opacity="0.2" fill="#FFFFFF" xlink:href="#path-3"></use>
+                            </g>
+                            <g id="Path-4" mask="url(#mask-2)">
+                              <use fill="currentColor" xlink:href="#path-4"></use>
+                              <use fill-opacity="0.2" fill="#FFFFFF" xlink:href="#path-4"></use>
+                            </g>
+                          </g>
+                          <g id="Triangle" transform="translate(19.000000, 11.000000) rotate(-300.000000) translate(-19.000000, -11.000000)">
+                            <use fill="currentColor" xlink:href="#path-5"></use>
+                            <use fill-opacity="0.2" fill="#FFFFFF" xlink:href="#path-5"></use>
+                          </g>
+                        </g>
+                      </g>
+                    </g>
+                  </svg>
+                </span>
+              </span>
+              <span class="app-brand-text demo menu-text fw-bold ms-2">សិស្ស</span>
+            </a>
+            <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
+              <i class="bx bx-chevron-left bx-sm align-middle"></i>
+            </a>
+          </div>
+          <div class="menu-divider mt-0"></div>
+          <div class="menu-inner-shadow"></div>
+          <ul class="menu-inner py-1">
+            <li class="menu-item active open">
+              <a href="javascript:void(0);" class="menu-link menu-toggle">
+                <i class="menu-icon tf-icons bx bx-home-smile"></i>
+                <div class="text-truncate">គ្រប់គ្រងសិស្ស</div>
+              </a>
+              <ul class="menu-sub">
+                <li class="menu-item active">
+                  <a href="index.html" class="menu-link">
+                    <div class="text-truncate">បញ្ជីឈ្មោះសិស្ស</div>
+                  </a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="layout-page">
+          <nav class="layout-navbar container-xxl navbar-detached navbar navbar-expand-xl align-items-center bg-navbar-theme" id="layout-navbar">
+            <div class="layout-menu-toggle navbar-nav align-items-xl-center me-4 me-xl-0 d-xl-none">
+              <a class="nav-item nav-link px-0 me-xl-6" href="javascript:void(0)">
+                <i class="bx bx-menu icon-md"></i>
+              </a>
+            </div>
+            <div class="navbar-nav-right d-flex align-items-center justify-content-end" id="navbar-collapse">
+              <div class="navbar-nav align-items-center me-auto">
+                <div class="nav-item d-flex align-items-center">
+                  <span class="w-px-22 h-px-22"><i class="bx bx-search icon-md"></i></span>
+                  <input type="text" id="globalSearch" class="form-control border-0 shadow-none ps-1 ps-sm-2 d-md-block d-none" placeholder="ស្វែងរកសិស្ស..." />
+                </div>
+              </div>
+              <ul class="navbar-nav flex-row align-items-center ms-md-auto">
+                <li class="nav-item navbar-dropdown dropdown-user dropdown">
+                  <a class="nav-link dropdown-toggle hide-arrow p-0" href="javascript:void(0);" data-bs-toggle="dropdown">
+                    <div class="avatar avatar-online">
+                      <img src="assets/img/avatars/1.png" alt class="w-px-40 h-auto rounded-circle" />
+                    </div>
+                  </a>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-menu-item" href="#">
+                        <div class="d-flex">
+                          <div class="flex-shrink-0 me-3">
+                            <div class="avatar avatar-online">
+                              <img src="assets/img/avatars/1.png" alt class="w-px-40 h-auto rounded-circle" />
+                            </div>
+                          </div>
+                          <div class="flex-grow-1">
+                            <h6 class="mb-0">Admin</h6>
+                            <small class="text-muted">Administrator</small>
+                          </div>
+                        </div>
+                      </a>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+          </nav>
+
+          <div class="content-wrapper">
+            <div class="container-xxl flex-grow-1 container-p-y">
+              <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <h4 class="fw-bold mb-0">គ្រប់គ្រងសិស្ស</h4>
+                <div class="d-flex gap-2 flex-wrap">
+                  <button class="btn btn-outline-success" onclick="document.getElementById('importFile').click()">
+                    <i class="bx bx-upload me-1"></i> Import Excel/CSV
+                  </button>
+                  <input type="file" id="importFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImport(event)" />
+                  <button class="btn btn-outline-secondary" onclick="downloadTemplate()">
+                    <i class="bx bx-download me-1"></i> Download Template
+                  </button>
+                  <button class="btn btn-primary" onclick="openAddModal()">
+                    <i class="bx bx-plus me-1"></i> បន្ថែមសិស្សថ្មី
+                  </button>
+                </div>
+              </div>
+
+              <!-- Stats -->
+              <div class="row mb-4 g-3">
+                <div class="col-6 col-md-3">
+                  <div class="stat-card blue">
+                    <div class="stat-number" id="statTotal">0</div>
+                    <div class="stat-label">សិស្សទាំងអស់</div>
+                  </div>
+                </div>
+                <div class="col-6 col-md-3">
+                  <div class="stat-card green">
+                    <div class="stat-number" id="statActive">0</div>
+                    <div class="stat-label">សកម្ម</div>
+                  </div>
+                </div>
+                <div class="col-6 col-md-3">
+                  <div class="stat-card orange">
+                    <div class="stat-number" id="statMale">0</div>
+                    <div class="stat-label">ប្រុស</div>
+                  </div>
+                </div>
+                <div class="col-6 col-md-3">
+                  <div class="stat-card red">
+                    <div class="stat-number" id="statFemale">0</div>
+                    <div class="stat-label">ស្រី</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Filter & Search -->
+              <div class="card mb-4">
+                <div class="card-body">
+                  <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                      <label class="form-label">ស្វែងរក</label>
+                      <input type="text" id="searchStudent" class="form-control" placeholder="ឈ្មោះ ឬ លេខទូរស័ព្ទ..." oninput="renderTable()" />
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label">ថ្នាក់ទី</label>
+                      <select id="filterGrade" class="form-select" onchange="renderTable()">
+                        <option value="">ទាំងអស់</option>
+                        <option value="7">ថ្នាក់ទី 7</option>
+                        <option value="8">ថ្នាក់ទី 8</option>
+                        <option value="9">ថ្នាក់ទី 9</option>
+                        <option value="10">ថ្នាក់ទី 10</option>
+                        <option value="11">ថ្នាក់ទី 11</option>
+                        <option value="12">ថ្នាក់ទី 12</option>
+                      </select>
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label">ភេទ</label>
+                      <select id="filterGender" class="form-select" onchange="renderTable()">
+                        <option value="">ទាំងអស់</option>
+                        <option value="ប្រុស">ប្រុស</option>
+                        <option value="ស្រី">ស្រី</option>
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label">ស្ថានភាព</label>
+                      <select id="filterStatus" class="form-select" onchange="renderTable()">
+                        <option value="">ទាំងអស់</option>
+                        <option value="សកម្ម">សកម្ម</option>
+                        <option value="ផ្ទេរចូលដើមឆ្នាំ">ផ្ទេរចូលដើមឆ្នាំ</option>
+                        <option value="ផ្ទេរចូលឆមាសទី១">ផ្ទេរចូលឆមាសទី១</option>
+                        <option value="ផ្ទេរចូលឆមាសទី២">ផ្ទេរចូលឆមាសទី២</option>
+                        <option value="ផ្ទេរចេញឆមាស១">ផ្ទេរចេញឆមាស១</option>
+                        <option value="ផ្ទេរចេញឆមាស២">ផ្ទេរចេញឆមាស២</option>
+                        <option value="លុបឈ្មោះឆមាស១">លុបឈ្មោះឆមាស១</option>
+                        <option value="លុបឈ្មោះឆមាស២">លុបឈ្មោះឆមាស២</option>
+                      </select>
+                    </div>
+                    <div class="col-md-2">
+                      <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                        <i class="bx bx-reset me-1"></i> សម្អាត
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Table -->
+              <div class="card">
+                <h5 class="card-header">បញ្ជីឈ្មោះសិស្ស</h5>
+                <div class="card-body p-0">
+                  <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>ឈ្មោះពេញ</th>
+                          <th>ភេទ</th>
+                          <th>ថ្ងៃខែឆ្នាំកំណើត</th>
+                          <th>ថ្នាក់ទី</th>
+                          <th>បន្ទប់</th>
+                          <th>លេខទូរស័ព្ទ</th>
+                          <th>ស្ថានភាព</th>
+                          <th>គ្រូបន្ទុក</th>
+                          <th>អ្នកបញ្ចូល</th>
+                          <th>សកម្មភាព</th>
+                        </tr>
+                      </thead>
+                      <tbody id="studentTableBody">
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <footer class="content-footer footer bg-footer-theme">
+              <div class="container-xxl">
+                <div class="footer-container d-flex align-items-center justify-content-between py-4 flex-md-row flex-column">
+                  <div class="text-body">© <script>document.write(new Date().getFullYear());</script>, គ្រប់គ្រងសិស្ស ❤️</div>
+                </div>
+              </div>
+            </footer>
+          </div>
+        </div>
+      </div>
+      <div class="layout-overlay layout-menu-toggle"></div>
+    </div>
+
+    <!-- Import Preview Modal -->
+    <div class="modal-overlay" id="importModal">
+      <div class="modal-box" style="max-width:900px">
+        <div class="modal-header-custom">
+          <h5 class="mb-0 fw-bold"><i class="bx bx-upload me-2 text-success"></i>មើលទិន្នន័យមុន Import</h5>
+          <button class="close-modal" onclick="closeImportModal()">✕</button>
+        </div>
+        <div id="importInfo" class="alert alert-info mb-3" style="display:none"></div>
+        <div id="importWarning" class="alert alert-warning mb-3" style="display:none"></div>
+
+        <!-- Column Mapping -->
+        <div id="mappingSection" class="mb-3">
+          <p class="fw-semibold mb-2">ផ្គូផ្គង Column ពី File ទៅ System:</p>
+          <div class="row g-2" id="mappingRows"></div>
+        </div>
+
+        <div class="table-responsive mb-3" style="max-height:300px; overflow-y:auto;">
+          <table class="table table-sm table-bordered" id="previewTable">
+            <thead id="previewHead"></thead>
+            <tbody id="previewBody"></tbody>
+          </table>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-success" onclick="confirmImport()">
+            <i class="bx bx-check me-1"></i> Import ចូលប្រព័ន្ធ
+          </button>
+          <button class="btn btn-outline-secondary" onclick="closeImportModal()">បោះបង់</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal-overlay" id="studentModal">
+      <div class="modal-box">
+        <div class="modal-header-custom">
+          <h5 id="modalTitle" class="mb-0 fw-bold">បន្ថែមសិស្សថ្មី</h5>
+          <button class="close-modal" onclick="closeModal()">✕</button>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">ឈ្មោះពេញ <span class="text-danger">*</span></label>
+            <div class="input-group input-group-merge">
+              <span class="input-group-text"><i class="bx bx-user"></i></span>
+              <input type="text" id="fName" class="form-control" placeholder="វាយឈ្មោះសិស្ស..." />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">ភេទ <span class="text-danger">*</span></label>
+            <div class="input-group input-group-merge">
+              <span class="input-group-text"><i class="bx bx-user-circle"></i></span>
+              <select id="fGender" class="form-select">
+                <option value="">-- ជ្រើសរើស --</option>
+                <option value="ប្រុស">ប្រុស</option>
+                <option value="ស្រី">ស្រី</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">ថ្ងៃខែឆ្នាំកំណើត</label>
+            <div class="input-group input-group-merge">
+              <span class="input-group-text"><i class="bx bx-calendar"></i></span>
+              <input type="date" id="fDob" class="form-control" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">ថ្ងៃខែឆ្នាំកំណើត</label>
+            <div class="input-group input-group-merge">
+              <span class="input-group-text"><i class="bx bx-calendar"></i></span>
+              <input type="date" id="fDob" class="form-control" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">ថ្នាក់ទី <span class="text-danger">*</span></label>
+            <div class="input-group input-group-merge">
+              <span class="input-group-text"><i class="bx bx-layer"></i></span>
+              <select id="fGrade" class="form-select">
+                <option value="">-- ជ្រើសរើស --</option>
+                <option value="7">ថ្នាក់ទី 7</option>
+                <option value="8">ថ្នាក់ទី 8</option>
+                <option value="9">ថ្នាក់ទី 9</option>
+                <option value="10">ថ្នាក់ទី 10</option>
+                <option value="11">ថ្នាក់ទី 11</option>
+                <option value="12">ថ្នាក់ទី 12</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">កម្រិតថ្នាក់ (បន្ទប់)</label>
+            <div class="input-group input-group-merge">
+              <span class="input-group-text"><i class="bx bx-home-alt"></i></span>
+              <select id="fRoom" class="form-select">
+                <option value="">-- ជ្រើសរើស --</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="E">E</option>
+                <option value="F">F</option>
+                <option value="G">G</option>
+                <option value="H">H</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">លេខទូរស័ព្ទ</label>
+            <div class="input-group input-group-merge">
+              <span class="input-group-text"><i class="bx bx-phone"></i></span>
+              <input type="text" id="fPhone" class="form-control" placeholder="0xx xxx xxx" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">ស្ថានភាពសិស្ស</label>
+            <div class="input-group input-group-merge">
+              <span class="input-group-text"><i class="bx bx-info-circle"></i></span>
+              <select id="fStatus" class="form-select">
+                <option value="សកម្ម">សកម្ម</option>
+                <option value="ផ្ទេរចូលដើមឆ្នាំ">ផ្ទេរចូលដើមឆ្នាំ</option>
+                <option value="ផ្ទេរចូលឆមាសទី១">ផ្ទេរចូលឆមាសទី១</option>
+                <option value="ផ្ទេរចូលឆមាសទី២">ផ្ទេរចូលឆមាសទី២</option>
+                <option value="ផ្ទេរចេញឆមាស១">ផ្ទេរចេញឆមាស១</option>
+                <option value="ផ្ទេរចេញឆមាស២">ផ្ទេរចេញឆមាស២</option>
+                <option value="ផ្ទេរចេញដើមឆ្នាំ">ផ្ទេរចេញដើមឆ្នាំ</option>
+                <option value="លុបឈ្មោះឆមាស១">លុបឈ្មោះឆមាស១</option>
+                <option value="លុបឈ្មោះឆមាស២">លុបឈ្មោះឆមាស២</option>
+                <option value="ដកបេក្ខភាពប្រឡងឆមាស១">ដកបេក្ខភាពប្រឡងឆមាស១</option>
+                <option value="ដកបេក្ខភាពប្រឡងឆមាស២">ដកបេក្ខភាពប្រឡងឆមាស២</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">ឈ្មោះគ្រូបន្ទុកថ្នាក់</label>
+            <div class="input-group input-group-merge">
+              <span class="input-group-text"><i class="bx bx-chalkboard"></i></span>
+              <input type="text" id="fTeacher" class="form-control" placeholder="ឈ្មោះគ្រូ..." />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">ឈ្មោះអ្នកបញ្ចូលទិន្នន័យ</label>
+            <div class="input-group input-group-merge">
+              <span class="input-group-text"><i class="bx bx-edit"></i></span>
+              <input type="text" id="fRecorder" class="form-control" placeholder="ឈ្មោះអ្នកបញ្ចូល..." />
+            </div>
+          </div>
+          <div class="col-12 mt-2">
+            <button class="btn btn-primary me-2" onclick="saveStudent()">
+              <i class="bx bx-save me-1"></i> រក្សាទុក
+            </button>
+            <button class="btn btn-outline-secondary" onclick="closeModal()">បោះបង់</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div class="confirm-overlay" id="confirmModal">
+      <div class="confirm-box">
+        <i class="bx bx-trash" style="font-size:48px; color:#ff3e1d; margin-bottom:16px; display:block;"></i>
+        <h5 class="fw-bold mb-2">លុបសិស្ស?</h5>
+        <p class="text-muted mb-4">តើអ្នកពិតជាចង់លុបសិស្សនេះ? ទិន្នន័យនឹងបាត់ពីអចិន្ត្រៃយ៍!</p>
+        <button class="btn btn-danger me-2" onclick="confirmDelete()">លុបចោល</button>
+        <button class="btn btn-outline-secondary" onclick="closeConfirm()">បោះបង់</button>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-msg" id="toastMsg"></div>
+
+    <script src="assets/vendor/libs/jquery/jquery.js"></script>
+    <script src="assets/vendor/libs/popper/popper.js"></script>
+    <script src="assets/vendor/js/bootstrap.js"></script>
+    <script src="assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+    <script src="assets/vendor/js/menu.js"></script>
+    <script src="assets/js/main.js"></script>
+
+    <script>
+      // ====== DATA ======
+      let students = JSON.parse(localStorage.getItem('students') || '[]');
+      let editingId = null;
+      let deletingId = null;
+
+      function saveData() {
+        localStorage.setItem('students', JSON.stringify(students));
+      }
+
+      // ====== STATS ======
+      function updateStats() {
+        document.getElementById('statTotal').textContent = students.length;
+        document.getElementById('statActive').textContent = students.filter(s => s.status === 'សកម្ម').length;
+        document.getElementById('statMale').textContent = students.filter(s => s.gender === 'ប្រុស').length;
+        document.getElementById('statFemale').textContent = students.filter(s => s.gender === 'ស្រី').length;
+      }
+
+      // ====== STATUS BADGE ======
+      function statusBadge(status) {
+        const colors = {
+          'សកម្ម': 'success',
+          'ផ្ទេរចេញឆមាស១': 'warning',
+          'ផ្ទេរចេញឆមាស២': 'warning',
+          'ផ្ទេរចេញដើមឆ្នាំ': 'warning',
+          'លុបឈ្មោះឆមាស១': 'danger',
+          'លុបឈ្មោះឆមាស២': 'danger',
+          'ដកបេក្ខភាពប្រឡងឆមាស១': 'secondary',
+          'ដកបេក្ខភាពប្រឡងឆមាស២': 'secondary',
+        };
+        const c = colors[status] || 'secondary';
+        return `<span class="badge bg-label-${c}">${status || '-'}</span>`;
+      }
+
+      // ====== RENDER TABLE ======
+      function renderTable() {
+        const search = document.getElementById('searchStudent').value.toLowerCase();
+        const grade = document.getElementById('filterGrade').value;
+        const gender = document.getElementById('filterGender').value;
+        const status = document.getElementById('filterStatus').value;
+
+        let filtered = students.filter(s => {
+          const matchSearch = !search ||
+            (s.name || '').toLowerCase().includes(search) ||
+            (s.phone || '').includes(search);
+          const matchGrade = !grade || s.grade === grade;
+          const matchGender = !gender || s.gender === gender;
+          const matchStatus = !status || s.status === status;
+          return matchSearch && matchGrade && matchGender && matchStatus;
+        });
+
+        const tbody = document.getElementById('studentTableBody');
+        if (filtered.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><i class="bx bx-user-x"></i>មិនមានសិស្ស<br><small class="text-muted">ចុច "បន្ថែមសិស្សថ្មី" ដើម្បីចាប់ផ្តើម</small></div></td></tr>`;
+        } else {
+          tbody.innerHTML = filtered.map((s, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td><strong>${s.name || '-'}</strong></td>
+              <td>${s.gender || '-'}</td>
+              <td>${s.dob || '-'}</td>
+              <td>${s.grade ? 'ថ្នាក់ទី ' + s.grade : '-'}</td>
+              <td>${s.room || '-'}</td>
+              <td>${s.phone || '-'}</td>
+              <td>${statusBadge(s.status)}</td>
+              <td>${s.teacher || '-'}</td>
+              <td>${s.recorder || '-'}</td>
+              <td>
+                <button class="action-btn btn-edit" onclick="openEditModal('${s.id}')" title="កែប្រែ">
+                  <i class="bx bx-edit-alt"></i>
+                </button>
+                <button class="action-btn btn-delete" onclick="openConfirm('${s.id}')" title="លុប">
+                  <i class="bx bx-trash"></i>
+                </button>
+              </td>
+            </tr>
+          `).join('');
+        }
+        updateStats();
+      }
+
+      // ====== MODAL ======
+      function openAddModal() {
+        editingId = null;
+        document.getElementById('modalTitle').textContent = 'បន្ថែមសិស្សថ្មី';
+        clearForm();
+        document.getElementById('studentModal').classList.add('active');
+      }
+
+      function openEditModal(id) {
+        const s = students.find(x => x.id === id);
+        if (!s) return;
+        editingId = id;
+        document.getElementById('modalTitle').textContent = 'កែប្រែព័ត៌មានសិស្ស';
+        document.getElementById('fName').value = s.name || '';
+        document.getElementById('fGender').value = s.gender || '';
+        document.getElementById('fDob').value = s.dob || '';
+        document.getElementById('fGrade').value = s.grade || '';
+        document.getElementById('fRoom').value = s.room || '';
+        document.getElementById('fPhone').value = s.phone || '';
+        document.getElementById('fStatus').value = s.status || 'សកម្ម';
+        document.getElementById('fTeacher').value = s.teacher || '';
+        document.getElementById('fRecorder').value = s.recorder || '';
+        document.getElementById('studentModal').classList.add('active');
+      }
+
+      function closeModal() {
+        document.getElementById('studentModal').classList.remove('active');
+        editingId = null;
+      }
+
+      function clearForm() {
+        ['fName','fGender','fDob','fGrade','fRoom','fPhone','fTeacher','fRecorder'].forEach(id => {
+          document.getElementById(id).value = '';
+        });
+        document.getElementById('fStatus').value = 'សកម្ម';
+      }
+
+      // ====== SAVE ======
+      function saveStudent() {
+        const name = document.getElementById('fName').value.trim();
+        const gender = document.getElementById('fGender').value;
+        const grade = document.getElementById('fGrade').value;
+
+        if (!name) { showToast('សូមវាយឈ្មោះសិស្ស!', true); return; }
+        if (!gender) { showToast('សូមជ្រើសរើសភេទ!', true); return; }
+        if (!grade) { showToast('សូមជ្រើសរើសថ្នាក់ទី!', true); return; }
+
+        const data = {
+          name,
+          gender,
+          grade,
+          dob: document.getElementById('fDob').value,
+          room: document.getElementById('fRoom').value,
+          phone: document.getElementById('fPhone').value.trim(),
+          status: document.getElementById('fStatus').value,
+          teacher: document.getElementById('fTeacher').value.trim(),
+          recorder: document.getElementById('fRecorder').value.trim(),
+        };
+
+        if (editingId) {
+          const idx = students.findIndex(s => s.id === editingId);
+          students[idx] = { ...students[idx], ...data };
+          showToast('កែប្រែបានជោគជ័យ! ✅');
+        } else {
+          data.id = 'id_' + Date.now();
+          data.createdAt = new Date().toISOString();
+          students.push(data);
+          showToast('បន្ថែមសិស្សបានជោគជ័យ! ✅');
+        }
+
+        saveData();
+        renderTable();
+        closeModal();
+      }
+
+      // ====== DELETE ======
+      function openConfirm(id) {
+        deletingId = id;
+        document.getElementById('confirmModal').classList.add('active');
+      }
+
+      function closeConfirm() {
+        deletingId = null;
+        document.getElementById('confirmModal').classList.remove('active');
+      }
+
+      function confirmDelete() {
+        students = students.filter(s => s.id !== deletingId);
+        saveData();
+        renderTable();
+        closeConfirm();
+        showToast('លុបបានជោគជ័យ! 🗑️');
+      }
+
+      // ====== TOAST ======
+      function showToast(msg, isError = false) {
+        const t = document.getElementById('toastMsg');
+        t.textContent = msg;
+        t.className = 'toast-msg show' + (isError ? ' error' : '');
+        setTimeout(() => { t.className = 'toast-msg'; }, 3000);
+      }
+
+      // ====== FILTER CLEAR ======
+      function clearFilters() {
+        document.getElementById('searchStudent').value = '';
+        document.getElementById('filterGrade').value = '';
+        document.getElementById('filterGender').value = '';
+        document.getElementById('filterStatus').value = '';
+        renderTable();
+      }
+
+      // ====== GLOBAL SEARCH ======
+      document.getElementById('globalSearch').addEventListener('input', function() {
+        document.getElementById('searchStudent').value = this.value;
+        renderTable();
+      });
+
+      // Close modal on overlay click
+      document.getElementById('studentModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+      });
+      document.getElementById('confirmModal').addEventListener('click', function(e) {
+        if (e.target === this) closeConfirm();
+      });
+
+      // ====== IMPORT ======
+      let importedRows = [];
+      let fileColumns = [];
+
+      const systemFields = [
+        { key: 'name',     label: 'ឈ្មោះពេញ' },
+        { key: 'gender',   label: 'ភេទ' },
+        { key: 'dob',      label: 'ថ្ងៃខែឆ្នាំកំណើត' },
+        { key: 'grade',    label: 'ថ្នាក់ទី' },
+        { key: 'room',     label: 'បន្ទប់' },
+        { key: 'phone',    label: 'លេខទូរស័ព្ទ' },
+        { key: 'status',   label: 'ស្ថានភាព' },
+        { key: 'teacher',  label: 'គ្រូបន្ទុក' },
+        { key: 'recorder', label: 'អ្នកបញ្ចូល' },
+      ];
+
+      // Auto-guess mapping by column name similarity
+      function guessMapping(col) {
+        const c = col.trim();
+        // ពិតប្រាកដ — check specific first
+        if (c === 'ឈ្មោះពេញ' || c.toLowerCase() === 'name') return 'name';
+        if (c.includes('ថ្ងៃខែ') || c.includes('កំណើត') || c.toLowerCase().includes('dob') || c.toLowerCase().includes('birth')) return 'dob';
+        if (c === 'ភេទ' || c.toLowerCase() === 'gender' || c.toLowerCase() === 'sex') return 'gender';
+        if ((c.includes('ថ្នាក់') && !c.includes('គ្រូ') && !c.includes('បន្ទុក')) || c.toLowerCase() === 'grade') return 'grade';
+        if (c.includes('បន្ទប់') || c.toLowerCase() === 'room') return 'room';
+        if (c.includes('ទូរស័ព្ទ') || c.toLowerCase().includes('phone') || c.toLowerCase().includes('tel')) return 'phone';
+        if (c.includes('ស្ថានភាព') || c.toLowerCase() === 'status') return 'status';
+        if (c.includes('គ្រូ') || c.toLowerCase().includes('teacher')) return 'teacher';
+        if (c.includes('បញ្ចូល') || c.toLowerCase().includes('recorder')) return 'recorder';
+        return '';
+      }
+
+      function handleImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        event.target.value = '';
+
+        const reader = new FileReader();
+        const isCSV = file.name.endsWith('.csv');
+
+        reader.onload = function(e) {
+          let data;
+          if (isCSV) {
+            const text = e.target.result;
+            const wb = XLSX.read(text, { type: 'string' });
+            data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+          } else {
+            const ab = e.target.result;
+            const wb = XLSX.read(ab, { type: 'array' });
+            data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+          }
+
+          if (!data || data.length < 2) {
+            showToast('File ទទេ ឬ មិនមាន data!', true); return;
+          }
+
+          fileColumns = data[0].map(c => String(c || '').trim());
+          importedRows = data.slice(1).filter(r => r.some(c => c !== undefined && c !== ''));
+
+          // Build mapping UI
+          const mapHtml = fileColumns.map((col, i) => {
+            const guessed = guessMapping(col);
+            const opts = systemFields.map(f =>
+              `<option value="${f.key}" ${guessed === f.key ? 'selected' : ''}>${f.label}</option>`
+            ).join('');
+            return `
+              <div class="col-md-4 col-6">
+                <div class="card p-2" style="font-size:13px">
+                  <div class="text-muted mb-1">📋 ${col}</div>
+                  <select class="form-select form-select-sm" id="map_${i}">
+                    <option value="">-- មិនប្រើ --</option>
+                    ${opts}
+                  </select>
+                </div>
+              </div>`;
+          }).join('');
+          document.getElementById('mappingRows').innerHTML = mapHtml;
+
+          // Preview table
+          const headHtml = `<tr>${fileColumns.map(c => `<th>${c}</th>`).join('')}</tr>`;
+          const bodyHtml = importedRows.slice(0, 5).map(row =>
+            `<tr>${fileColumns.map((_, i) => `<td>${row[i] !== undefined ? row[i] : ''}</td>`).join('')}</tr>`
+          ).join('');
+          document.getElementById('previewHead').innerHTML = headHtml;
+          document.getElementById('previewBody').innerHTML = bodyHtml;
+
+          document.getElementById('importInfo').style.display = 'block';
+          document.getElementById('importInfo').textContent = `🔍 រកឃើញ ${importedRows.length} សិស្ស — បង្ហាញ ${Math.min(5, importedRows.length)} ដំបូង`;
+          document.getElementById('importModal').classList.add('active');
+        };
+
+        if (isCSV) reader.readAsText(file, 'UTF-8');
+        else reader.readAsArrayBuffer(file);
+      }
+
+      function confirmImport() {
+        // Build mapping: colIndex -> fieldKey
+        const mapping = {};
+        fileColumns.forEach((_, i) => {
+          const val = document.getElementById('map_' + i)?.value;
+          if (val) mapping[i] = val;
+        });
+
+        if (Object.keys(mapping).length === 0) {
+          showToast('សូមផ្គូផ្គង column យ៉ាងតិច 1!', true); return;
+        }
+
+        let added = 0;
+        importedRows.forEach(row => {
+          const s = { id: 'id_' + Date.now() + '_' + Math.random(), createdAt: new Date().toISOString(), status: 'សកម្ម' };
+          Object.entries(mapping).forEach(([colIdx, field]) => {
+            let val = row[colIdx];
+            if (val !== undefined && val !== null) s[field] = String(val).trim();
+          });
+          if (s.name) { students.push(s); added++; }
+        });
+
+        saveData();
+        renderTable();
+        closeImportModal();
+        showToast(`Import បានជោគជ័យ! បន្ថែម ${added} សិស្ស ✅`);
+      }
+
+      function closeImportModal() {
+        document.getElementById('importModal').classList.remove('active');
+        importedRows = [];
+        fileColumns = [];
+      }
+
+      // ====== DOWNLOAD TEMPLATE ======
+      function downloadTemplate() {
+        const ws_data = [
+          ['ឈ្មោះពេញ','ភេទ','ថ្ងៃខែឆ្នាំកំណើត','ថ្នាក់ទី','កម្រិតថ្នាក់ (បន្ទប់)','លេខទូរស័ព្ទ','ស្ថានភាពសិស្ស','ឈ្មោះគ្រូបន្ទុកថ្នាក់','ឈ្មោះអ្នកបញ្ចូលទិន្នន័យ'],
+          ['សុខ វិទ្យា','ប្រុស','01/01/2008','10','A','012345678','សកម្ម','គ្រូ ចន្ទ','Admin'],
+          ['លី សុភា','ស្រី','15/03/2009','9','B','098765432','សកម្ម','គ្រូ ណា','Admin'],
+          ['ហេង សុខា','ប្រុស','22/07/2007','11','C','070123456','ផ្ទេរចូលឆមាសទី១','គ្រូ ដារា','Admin'],
+        ];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+        ws['!cols'] = [
+          { wch: 22 }, { wch: 8 }, { wch: 18 }, { wch: 10 },
+          { wch: 20 }, { wch: 14 }, { wch: 24 }, { wch: 22 }, { wch: 22 }
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, 'បញ្ជីសិស្ស');
+        XLSX.writeFile(wb, 'student_template.xlsx');
+        showToast('Download Template បានជោគជ័យ! ✅');
+      }
+
+      document.getElementById('importModal').addEventListener('click', function(e) {
+        if (e.target === this) closeImportModal();
+      });
+
+      // ====== INIT ======
+      renderTable();
+    </script>
+  </body>
+</html>
