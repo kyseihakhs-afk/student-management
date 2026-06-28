@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
     <script src="assets/vendor/js/helpers.js"></script>
     <script src="assets/js/config.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
       .student-form-card { border-radius: 12px; }
       .table th { background-color: #f5f5f9; font-weight: 600; }
@@ -185,11 +186,20 @@
 
           <div class="content-wrapper">
             <div class="container-xxl flex-grow-1 container-p-y">
-              <div class="d-flex justify-content-between align-items-center mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                 <h4 class="fw-bold mb-0">គ្រប់គ្រងសិស្ស</h4>
-                <button class="btn btn-primary" onclick="openAddModal()">
-                  <i class="bx bx-plus me-1"></i> បន្ថែមសិស្សថ្មី
-                </button>
+                <div class="d-flex gap-2 flex-wrap">
+                  <button class="btn btn-outline-success" onclick="document.getElementById('importFile').click()">
+                    <i class="bx bx-upload me-1"></i> Import Excel/CSV
+                  </button>
+                  <input type="file" id="importFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImport(event)" />
+                  <button class="btn btn-outline-secondary" onclick="downloadTemplate()">
+                    <i class="bx bx-download me-1"></i> Download Template
+                  </button>
+                  <button class="btn btn-primary" onclick="openAddModal()">
+                    <i class="bx bx-plus me-1"></i> បន្ថែមសិស្សថ្មី
+                  </button>
+                </div>
               </div>
 
               <!-- Stats -->
@@ -308,6 +318,37 @@
         </div>
       </div>
       <div class="layout-overlay layout-menu-toggle"></div>
+    </div>
+
+    <!-- Import Preview Modal -->
+    <div class="modal-overlay" id="importModal">
+      <div class="modal-box" style="max-width:900px">
+        <div class="modal-header-custom">
+          <h5 class="mb-0 fw-bold"><i class="bx bx-upload me-2 text-success"></i>មើលទិន្នន័យមុន Import</h5>
+          <button class="close-modal" onclick="closeImportModal()">✕</button>
+        </div>
+        <div id="importInfo" class="alert alert-info mb-3" style="display:none"></div>
+        <div id="importWarning" class="alert alert-warning mb-3" style="display:none"></div>
+
+        <!-- Column Mapping -->
+        <div id="mappingSection" class="mb-3">
+          <p class="fw-semibold mb-2">ផ្គូផ្គង Column ពី File ទៅ System:</p>
+          <div class="row g-2" id="mappingRows"></div>
+        </div>
+
+        <div class="table-responsive mb-3" style="max-height:300px; overflow-y:auto;">
+          <table class="table table-sm table-bordered" id="previewTable">
+            <thead id="previewHead"></thead>
+            <tbody id="previewBody"></tbody>
+          </table>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-success" onclick="confirmImport()">
+            <i class="bx bx-check me-1"></i> Import ចូលប្រព័ន្ធ
+          </button>
+          <button class="btn btn-outline-secondary" onclick="closeImportModal()">បោះបង់</button>
+        </div>
+      </div>
     </div>
 
     <!-- Add/Edit Modal -->
@@ -637,6 +678,153 @@
       });
       document.getElementById('confirmModal').addEventListener('click', function(e) {
         if (e.target === this) closeConfirm();
+      });
+
+      // ====== IMPORT ======
+      let importedRows = [];
+      let fileColumns = [];
+
+      const systemFields = [
+        { key: 'name',     label: 'ឈ្មោះពេញ' },
+        { key: 'age',      label: 'អាយុ' },
+        { key: 'gender',   label: 'ភេទ' },
+        { key: 'grade',    label: 'ថ្នាក់ទី' },
+        { key: 'room',     label: 'បន្ទប់' },
+        { key: 'phone',    label: 'លេខទូរស័ព្ទ' },
+        { key: 'status',   label: 'ស្ថានភាព' },
+        { key: 'teacher',  label: 'គ្រូបន្ទុក' },
+        { key: 'recorder', label: 'អ្នកបញ្ចូល' },
+      ];
+
+      // Auto-guess mapping by column name similarity
+      function guessMapping(col) {
+        const c = col.toLowerCase().replace(/\s/g,'');
+        if (c.includes('ឈ្មោះ') || c.includes('name')) return 'name';
+        if (c.includes('អាយុ') || c.includes('age')) return 'age';
+        if (c.includes('ភេទ') || c.includes('gender') || c.includes('sex')) return 'gender';
+        if (c.includes('ថ្នាក់') || c.includes('grade') || c.includes('class')) return 'grade';
+        if (c.includes('បន្ទប់') || c.includes('room')) return 'room';
+        if (c.includes('ទូរស័ព្ទ') || c.includes('phone') || c.includes('tel')) return 'phone';
+        if (c.includes('ស្ថានភាព') || c.includes('status')) return 'status';
+        if (c.includes('គ្រូ') || c.includes('teacher')) return 'teacher';
+        if (c.includes('បញ្ចូល') || c.includes('recorder')) return 'recorder';
+        return '';
+      }
+
+      function handleImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        event.target.value = '';
+
+        const reader = new FileReader();
+        const isCSV = file.name.endsWith('.csv');
+
+        reader.onload = function(e) {
+          let data;
+          if (isCSV) {
+            const text = e.target.result;
+            const wb = XLSX.read(text, { type: 'string' });
+            data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+          } else {
+            const ab = e.target.result;
+            const wb = XLSX.read(ab, { type: 'array' });
+            data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+          }
+
+          if (!data || data.length < 2) {
+            showToast('File ទទេ ឬ មិនមាន data!', true); return;
+          }
+
+          fileColumns = data[0].map(c => String(c || '').trim());
+          importedRows = data.slice(1).filter(r => r.some(c => c !== undefined && c !== ''));
+
+          // Build mapping UI
+          const mapHtml = fileColumns.map((col, i) => {
+            const guessed = guessMapping(col);
+            const opts = systemFields.map(f =>
+              `<option value="${f.key}" ${guessed === f.key ? 'selected' : ''}>${f.label}</option>`
+            ).join('');
+            return `
+              <div class="col-md-4 col-6">
+                <div class="card p-2" style="font-size:13px">
+                  <div class="text-muted mb-1">📋 ${col}</div>
+                  <select class="form-select form-select-sm" id="map_${i}">
+                    <option value="">-- មិនប្រើ --</option>
+                    ${opts}
+                  </select>
+                </div>
+              </div>`;
+          }).join('');
+          document.getElementById('mappingRows').innerHTML = mapHtml;
+
+          // Preview table
+          const headHtml = `<tr>${fileColumns.map(c => `<th>${c}</th>`).join('')}</tr>`;
+          const bodyHtml = importedRows.slice(0, 5).map(row =>
+            `<tr>${fileColumns.map((_, i) => `<td>${row[i] !== undefined ? row[i] : ''}</td>`).join('')}</tr>`
+          ).join('');
+          document.getElementById('previewHead').innerHTML = headHtml;
+          document.getElementById('previewBody').innerHTML = bodyHtml;
+
+          document.getElementById('importInfo').style.display = 'block';
+          document.getElementById('importInfo').textContent = `🔍 រកឃើញ ${importedRows.length} សិស្ស — បង្ហាញ ${Math.min(5, importedRows.length)} ដំបូង`;
+          document.getElementById('importModal').classList.add('active');
+        };
+
+        if (isCSV) reader.readAsText(file, 'UTF-8');
+        else reader.readAsArrayBuffer(file);
+      }
+
+      function confirmImport() {
+        // Build mapping: colIndex -> fieldKey
+        const mapping = {};
+        fileColumns.forEach((_, i) => {
+          const val = document.getElementById('map_' + i)?.value;
+          if (val) mapping[i] = val;
+        });
+
+        if (Object.keys(mapping).length === 0) {
+          showToast('សូមផ្គូផ្គង column យ៉ាងតិច 1!', true); return;
+        }
+
+        let added = 0;
+        importedRows.forEach(row => {
+          const s = { id: 'id_' + Date.now() + '_' + Math.random(), createdAt: new Date().toISOString(), status: 'សកម្ម' };
+          Object.entries(mapping).forEach(([colIdx, field]) => {
+            let val = row[colIdx];
+            if (val !== undefined && val !== null) s[field] = String(val).trim();
+          });
+          if (s.name) { students.push(s); added++; }
+        });
+
+        saveData();
+        renderTable();
+        closeImportModal();
+        showToast(`Import បានជោគជ័យ! បន្ថែម ${added} សិស្ស ✅`);
+      }
+
+      function closeImportModal() {
+        document.getElementById('importModal').classList.remove('active');
+        importedRows = [];
+        fileColumns = [];
+      }
+
+      // ====== DOWNLOAD TEMPLATE ======
+      function downloadTemplate() {
+        const ws_data = [
+          ['ឈ្មោះពេញ','អាយុ','ភេទ','ថ្នាក់ទី','បន្ទប់','លេខទូរស័ព្ទ','ស្ថានភាព','គ្រូបន្ទុក','អ្នកបញ្ចូល'],
+          ['សុខ វិទ្យា','16','ប្រុស','10','A','012345678','សកម្ម','គ្រូ ចន្ទ','Admin'],
+          ['លី សុភា','15','ស្រី','9','B','098765432','សកម្ម','គ្រូ ណា','Admin'],
+        ];
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+        ws['!cols'] = ws_data[0].map(() => ({ wch: 20 }));
+        XLSX.utils.book_append_sheet(wb, ws, 'Students');
+        XLSX.writeFile(wb, 'student_template.xlsx');
+        showToast('Download Template បានជោគជ័យ! ✅');
+      }
+
+      document.getElementById('importModal').addEventListener('click', function(e) {
+        if (e.target === this) closeImportModal();
       });
 
       // ====== INIT ======
