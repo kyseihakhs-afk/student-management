@@ -263,8 +263,9 @@
                       <select id="filterStatus" class="form-select" onchange="renderTable()">
                         <option value="">ទាំងអស់</option>
                         <option value="សកម្ម">សកម្ម</option>
-                          <option value="ផ្ទេរចូលឆមាស១">ផ្ទេរចូលឆមាស១</option>
-                        <option value="ផ្ទេរចូលឆមាស២">ផ្ទេរចូលឆមាស២</option>
+                        <option value="ផ្ទេរចូលដើមឆ្នាំ">ផ្ទេរចូលដើមឆ្នាំ</option>
+                        <option value="ផ្ទេរចូលឆមាសទី១">ផ្ទេរចូលឆមាសទី១</option>
+                        <option value="ផ្ទេរចូលឆមាសទី២">ផ្ទេរចូលឆមាសទី២</option>
                         <option value="ផ្ទេរចេញឆមាស១">ផ្ទេរចេញឆមាស១</option>
                         <option value="ផ្ទេរចេញឆមាស២">ផ្ទេរចេញឆមាស២</option>
                         <option value="លុបឈ្មោះឆមាស១">លុបឈ្មោះឆមាស១</option>
@@ -291,6 +292,7 @@
                           <th>#</th>
                           <th>ឈ្មោះពេញ</th>
                           <th>ភេទ</th>
+                          <th>ថ្ងៃខែឆ្នាំកំណើត</th>
                           <th>ថ្នាក់ទី</th>
                           <th>បន្ទប់</th>
                           <th>លេខទូរស័ព្ទ</th>
@@ -380,6 +382,20 @@
             </div>
           </div>
           <div class="col-md-6">
+            <label class="form-label">ថ្ងៃខែឆ្នាំកំណើត</label>
+            <div class="input-group input-group-merge">
+              <span class="input-group-text"><i class="bx bx-calendar"></i></span>
+              <input type="date" id="fDob" class="form-control" />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">ថ្ងៃខែឆ្នាំកំណើត</label>
+            <div class="input-group input-group-merge">
+              <span class="input-group-text"><i class="bx bx-calendar"></i></span>
+              <input type="date" id="fDob" class="form-control" />
+            </div>
+          </div>
+          <div class="col-md-6">
             <label class="form-label">ថ្នាក់ទី <span class="text-danger">*</span></label>
             <div class="input-group input-group-merge">
               <span class="input-group-text"><i class="bx bx-layer"></i></span>
@@ -424,6 +440,9 @@
               <span class="input-group-text"><i class="bx bx-info-circle"></i></span>
               <select id="fStatus" class="form-select">
                 <option value="សកម្ម">សកម្ម</option>
+                <option value="ផ្ទេរចូលដើមឆ្នាំ">ផ្ទេរចូលដើមឆ្នាំ</option>
+                <option value="ផ្ទេរចូលឆមាសទី១">ផ្ទេរចូលឆមាសទី១</option>
+                <option value="ផ្ទេរចូលឆមាសទី២">ផ្ទេរចូលឆមាសទី២</option>
                 <option value="ផ្ទេរចេញឆមាស១">ផ្ទេរចេញឆមាស១</option>
                 <option value="ផ្ទេរចេញឆមាស២">ផ្ទេរចេញឆមាស២</option>
                 <option value="ផ្ទេរចេញដើមឆ្នាំ">ផ្ទេរចេញដើមឆ្នាំ</option>
@@ -539,6 +558,7 @@
               <td>${i + 1}</td>
               <td><strong>${s.name || '-'}</strong></td>
               <td>${s.gender || '-'}</td>
+              <td>${s.dob || '-'}</td>
               <td>${s.grade ? 'ថ្នាក់ទី ' + s.grade : '-'}</td>
               <td>${s.room || '-'}</td>
               <td>${s.phone || '-'}</td>
@@ -574,6 +594,7 @@
         document.getElementById('modalTitle').textContent = 'កែប្រែព័ត៌មានសិស្ស';
         document.getElementById('fName').value = s.name || '';
         document.getElementById('fGender').value = s.gender || '';
+        document.getElementById('fDob').value = s.dob || '';
         document.getElementById('fGrade').value = s.grade || '';
         document.getElementById('fRoom').value = s.room || '';
         document.getElementById('fPhone').value = s.phone || '';
@@ -589,7 +610,7 @@
       }
 
       function clearForm() {
-        ['fName','fGender','fGrade','fRoom','fPhone','fTeacher','fRecorder'].forEach(id => {
+        ['fName','fGender','fDob','fGrade','fRoom','fPhone','fTeacher','fRecorder'].forEach(id => {
           document.getElementById(id).value = '';
         });
         document.getElementById('fStatus').value = 'សកម្ម';
@@ -609,6 +630,7 @@
           name,
           gender,
           grade,
+          dob: document.getElementById('fDob').value,
           room: document.getElementById('fRoom').value,
           phone: document.getElementById('fPhone').value.trim(),
           status: document.getElementById('fStatus').value,
@@ -688,8 +710,8 @@
 
       const systemFields = [
         { key: 'name',     label: 'ឈ្មោះពេញ' },
-        { key: 'age',      label: 'អាយុ' },
         { key: 'gender',   label: 'ភេទ' },
+        { key: 'dob',      label: 'ថ្ងៃខែឆ្នាំកំណើត' },
         { key: 'grade',    label: 'ថ្នាក់ទី' },
         { key: 'room',     label: 'បន្ទប់' },
         { key: 'phone',    label: 'លេខទូរស័ព្ទ' },
@@ -702,7 +724,7 @@
       function guessMapping(col) {
         const c = col.toLowerCase().replace(/\s/g,'');
         if (c.includes('ឈ្មោះ') || c.includes('name')) return 'name';
-        if (c.includes('អាយុ') || c.includes('age')) return 'age';
+        if (c.includes('ថ្ងៃខែ') || c.includes('កំណើត') || c.includes('dob') || c.includes('birth')) return 'dob';
         if (c.includes('ភេទ') || c.includes('gender') || c.includes('sex')) return 'gender';
         if (c.includes('ថ្នាក់') || c.includes('grade') || c.includes('class')) return 'grade';
         if (c.includes('បន្ទប់') || c.includes('room')) return 'room';
