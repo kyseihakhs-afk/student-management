@@ -492,6 +492,34 @@
     <script src="assets/js/main.js"></script>
 
     <script>
+
+// មុខងារ Login
+// ១. បង្កើតមុខងារទាក់ទងទៅ Login នៅពេលចុចប៊ូតុង Submit
+function handleLogin(email, password) {
+  firebase.auth().signInWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+      alert("លោកគ្រូ/អ្នកគ្រូ បានចូលប្រើប្រាស់ប្រព័ន្ធជោគជ័យ!");
+      // នៅពេល Login ជាប់ អាចបើកដំណើរការ Form បញ្ចូលទិន្នន័យបាន
+    })
+    .catch((error) => {
+      alert("អ៊ីមែល ឬលេខសម្ងាត់មិនត្រឹមត្រូវ៖ " + error.message);
+    });
+}
+
+// ២. មុខងារពិនិត្យស្ថានភាព៖ បើមិនទាន់ Login ទេ មិនឱ្យបញ្ចូលទិន្នន័យដាច់ខាត
+firebase.auth().onAuthStateChanged((user) => {
+  if (user) {
+    console.log("អ្នកប្រើប្រាស់កំពុងស្ថិតក្នុងប្រព័ន្ធ៖", user.email);
+    // បើកសិទ្ធិឱ្យទាញទិន្នន័យពី Firebase បាន
+    loadDataFromFirebase(); 
+  } else {
+    console.log("មិនទាន់បានចូលក្នុងប្រព័ន្ធទេ!");
+    // លាក់ Form បញ្ចូលទិន្នន័យសិន រហូតទាល់តែគាត់ Login ជោគជ័យ
+  }
+});
+
+
+      
       // ====== DATA ======
       let students = JSON.parse(localStorage.getItem('students') || '[]');
       let editingId = null;
@@ -850,6 +878,43 @@
 
       // ====== INIT ======
       renderTable();
+
+// កូដចាស់ៗរបស់ប្អូន...
+  // ...
+
+</script> ```
+
+### ជំហានទី ២៖ ផាស (Paste) កូដចូលនៅពីលើវា
+សូមយកកូដខាងក្រោមនេះ ទៅផាសចូល**នៅចំពីលើបន្ទាត់បិទ `</script>` នោះ**៖
+
+```javascript
+// === មុខងារទាញទិន្នន័យពី Cloud Firebase មកបង្ហាញក្នុងតារាង ===
+function loadDataFromFirebase() {
+  var tableBody = document.getElementById('studentTableBody');
+  
+  if (!tableBody) return; // ការពារកុំឱ្យ Error បើករកតារាងមិនឃើញ
+
+  // ទាញទិន្នន័យផ្ទាល់ពី Cloud Firebase Realtime Database
+  database.ref('students').on('value', (snapshot) => {
+    tableBody.innerHTML = ''; // សម្អាតតារាងចាស់ចោលមុននឹងបង្ហាញទិន្នន័យថ្មី
+    
+    snapshot.forEach((childSnapshot) => {
+      var student = childSnapshot.val();
+      
+      // បង្កើតជួរដេក (Row) បង្ហាញក្នុងតារាង HTML
+      var row = `<tr>
+                   <td>${student.name || ''}</td>
+                   <td>${student.gender || ''}</td>
+                   <td>${student.class || ''}</td>
+                 </tr>`;
+      tableBody.innerHTML += row;
+    });
+  });
+}
+
+
+
+      
     </script>
   </body>
 </html>
