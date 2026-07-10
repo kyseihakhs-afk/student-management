@@ -137,6 +137,12 @@
                 </li>
               </ul>
             </li>
+            <li class="menu-item admin-only">
+              <a href="admin.html" class="menu-link">
+                <i class="menu-icon tf-icons bx bx-shield"></i>
+                <div class="text-truncate">គ្រប់គ្រង Account</div>
+              </a>
+            </li>
           </ul>
         </aside>
 
@@ -156,10 +162,21 @@
                 </div>
               </div>
               <ul class="navbar-nav flex-row align-items-center ms-md-auto">
+                <li class="nav-item me-3 d-none d-md-flex align-items-center">
+                  <div class="text-end">
+                    <div style="font-size:13px;font-weight:600;color:#333;" id="userEmail">...</div>
+                    <div style="font-size:11px;color:#696cff;" id="userRole">...</div>
+                  </div>
+                </li>
+                <li class="nav-item me-2">
+                  <button class="btn btn-outline-danger btn-sm" onclick="logout()">
+                    <i class="bx bx-log-out me-1"></i>ចេញ
+                  </button>
+                </li>
                 <li class="nav-item navbar-dropdown dropdown-user dropdown">
                   <a class="nav-link dropdown-toggle hide-arrow p-0" href="javascript:void(0);" data-bs-toggle="dropdown">
                     <div class="avatar avatar-online">
-                      <img src="assets/img/avatars/1.png" alt class="w-px-40 h-auto rounded-circle" />
+                      <img id="profileImg" src="assets/img/avatars/1.png" alt class="w-px-40 h-auto rounded-circle" style="object-fit:cover;width:40px;height:40px;" />
                     </div>
                   </a>
                   <ul class="dropdown-menu dropdown-menu-end">
@@ -168,16 +185,24 @@
                         <div class="d-flex">
                           <div class="flex-shrink-0 me-3">
                             <div class="avatar avatar-online">
-                              <img src="assets/img/avatars/1.png" alt class="w-px-40 h-auto rounded-circle" />
+                              <img id="profileImg2" src="assets/img/avatars/1.png" alt class="w-px-40 h-auto rounded-circle" style="object-fit:cover;width:40px;height:40px;" />
                             </div>
                           </div>
                           <div class="flex-grow-1">
-                            <h6 class="mb-0">Admin</h6>
-                            <small class="text-muted">Administrator</small>
+                            <h6 class="mb-0" id="userEmail2">Admin</h6>
+                            <small class="text-muted" id="userRole2">Administrator</small>
                           </div>
                         </div>
                       </a>
                     </li>
+                    <li><div class="dropdown-divider"></div></li>
+                    <li>
+                      <a class="dropdown-item" href="javascript:void(0);" onclick="document.getElementById('photoInput').click()">
+                        <i class="bx bx-camera me-2 text-primary"></i>ប្តូររូប Profile
+                      </a>
+                      <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="changePhoto(event)" />
+                    </li>
+                    <li><a class="dropdown-item" href="javascript:void(0);" onclick="logout()"><i class="bx bx-power-off me-2 text-danger"></i>ចេញពីប្រព័ន្ធ</a></li>
                   </ul>
                 </li>
               </ul>
@@ -189,12 +214,15 @@
               <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                 <h4 class="fw-bold mb-0">គ្រប់គ្រងសិស្ស</h4>
                 <div class="d-flex gap-2 flex-wrap">
-                  <button class="btn btn-outline-success" onclick="document.getElementById('importFile').click()">
+                  <button class="btn btn-outline-success admin-only" onclick="document.getElementById('importFile').click()">
                     <i class="bx bx-upload me-1"></i> Import Excel/CSV
                   </button>
                   <input type="file" id="importFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImport(event)" />
-                  <button class="btn btn-outline-secondary" onclick="downloadTemplate()">
+                  <button class="btn btn-outline-secondary admin-only" onclick="downloadTemplate()">
                     <i class="bx bx-download me-1"></i> Download Template
+                  </button>
+                  <button class="btn btn-outline-warning" onclick="exportExcel()">
+                    <i class="bx bx-export me-1"></i> Export Excel
                   </button>
                   <button class="btn btn-primary" onclick="openAddModal()">
                     <i class="bx bx-plus me-1"></i> បន្ថែមសិស្សថ្មី
@@ -490,44 +518,107 @@
     <script src="assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
     <script src="assets/vendor/js/menu.js"></script>
     <script src="assets/js/main.js"></script>
-
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyAxRy0KTHude3zeWFL6_D7Je5Qe8dX0PSc",
+        authDomain: "seihak-school-db.firebaseapp.com",
+        databaseURL: "https://seihak-school-db-default-rtdb.firebaseio.com",
+        projectId: "seihak-school-db",
+        storageBucket: "seihak-school-db.firebasestorage.app",
+        messagingSenderId: "384692446932",
+        appId: "1:384692446932:web:1fd4a22975f9b3a2bbfd41"
+      };
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const db = firebase.database();
+      const studentsRef = db.ref('students');
 
-// មុខងារ Login
-// ១. បង្កើតមុខងារទាក់ទងទៅ Login នៅពេលចុចប៊ូតុង Submit
-function handleLogin(email, password) {
-  firebase.auth().signInWithEmailAndPassword(email, password)
-    .then((userCredential) => {
-      alert("លោកគ្រូ/អ្នកគ្រូ បានចូលប្រើប្រាស់ប្រព័ន្ធជោគជ័យ!");
-      // នៅពេល Login ជាប់ អាចបើកដំណើរការ Form បញ្ចូលទិន្នន័យបាន
-    })
-    .catch((error) => {
-      alert("អ៊ីមែល ឬលេខសម្ងាត់មិនត្រឹមត្រូវ៖ " + error.message);
-    });
-}
+      // ====== CURRENT USER ======
+      let currentUser = null;
+      let currentRole = null;
+      let currentTeacherClass = null;
 
-// ២. មុខងារពិនិត្យស្ថានភាព៖ បើមិនទាន់ Login ទេ មិនឱ្យបញ្ចូលទិន្នន័យដាច់ខាត
-firebase.auth().onAuthStateChanged((user) => {
-  if (user) {
-    console.log("អ្នកប្រើប្រាស់កំពុងស្ថិតក្នុងប្រព័ន្ធ៖", user.email);
-    // បើកសិទ្ធិឱ្យទាញទិន្នន័យពី Firebase បាន
-    loadDataFromFirebase(); 
-  } else {
-    console.log("មិនទាន់បានចូលក្នុងប្រព័ន្ធទេ!");
-    // លាក់ Form បញ្ចូលទិន្នន័យសិន រហូតទាល់តែគាត់ Login ជោគជ័យ
-  }
-});
+      // ====== AUTH CHECK ======
+      auth.onAuthStateChanged(user => {
+        if (!user) {
+          window.location.href = 'login.html';
+          return;
+        }
+        currentUser = user;
+        db.ref('users/' + user.uid).once('value').then(snap => {
+          const userData = snap.val() || {};
+          currentRole = userData.role || 'teacher';
+          currentTeacherClass = userData.class || '';
 
+          // Load profile photo
+          if (userData.photo) updateProfilePhoto(userData.photo);
 
-      
+          // Update UI based on role
+          updateUIForRole();
+
+          // Load data
+          studentsRef.on('value', (snapshot) => {
+            students = [];
+            snapshot.forEach((child) => {
+              students.push({ id: child.key, ...child.val() });
+            });
+            renderTable();
+          });
+        });
+      });
+
+      function updateUIForRole() {
+        const isAdmin = currentRole === 'admin';
+        const adminBtns = document.querySelectorAll('.admin-only');
+        adminBtns.forEach(btn => btn.style.display = isAdmin ? '' : 'none');
+        const emailEl  = document.getElementById('userEmail');
+        const roleEl   = document.getElementById('userRole');
+        const email2El = document.getElementById('userEmail2');
+        const role2El  = document.getElementById('userRole2');
+        if (emailEl)  emailEl.textContent  = currentUser.email;
+        if (roleEl)   roleEl.textContent   = isAdmin ? '👑 Admin' : '👨‍🏫 គ្រូ: ' + currentTeacherClass;
+        if (email2El) email2El.textContent = currentUser.email;
+        if (role2El)  role2El.textContent  = isAdmin ? 'Administrator' : 'Teacher';
+      }
+
+      function logout() {
+        auth.signOut().then(() => window.location.href = 'login.html');
+      }
+
+      // ====== PROFILE PHOTO ======
+      function changePhoto(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const photoData = e.target.result;
+          // Save to Firebase
+          db.ref('users/' + currentUser.uid + '/photo').set(photoData)
+            .then(() => {
+              updateProfilePhoto(photoData);
+              showToast('ប្តូររូប Profile បានជោគជ័យ! ✅');
+            })
+            .catch(() => showToast('មានបញ្ហា!', true));
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function updateProfilePhoto(photoData) {
+        const defaultPhoto = 'assets/img/avatars/1.png';
+        const src = photoData || defaultPhoto;
+        document.getElementById('profileImg').src = src;
+        document.getElementById('profileImg2').src = src;
+      }
+
       // ====== DATA ======
-      let students = JSON.parse(localStorage.getItem('students') || '[]');
+      let students = [];
       let editingId = null;
       let deletingId = null;
 
-      function saveData() {
-        localStorage.setItem('students', JSON.stringify(students));
-      }
+      function saveData() {}
 
       // ====== STATS ======
       function updateStats() {
@@ -574,7 +665,17 @@ firebase.auth().onAuthStateChanged((user) => {
         if (filtered.length === 0) {
           tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><i class="bx bx-user-x"></i>មិនមានសិស្ស<br><small class="text-muted">ចុច "បន្ថែមសិស្សថ្មី" ដើម្បីចាប់ផ្តើម</small></div></td></tr>`;
         } else {
-          tbody.innerHTML = filtered.map((s, i) => `
+          tbody.innerHTML = filtered.map((s, i) => {
+            const isAdmin = currentRole === 'admin';
+            const isOwner = currentTeacherClass && (s.room === currentTeacherClass || s.grade === currentTeacherClass);
+            const canEdit = isAdmin || isOwner;
+            const editBtn = canEdit
+              ? `<button class="action-btn btn-edit" onclick="openEditModal('${s.id}')" title="កែប្រែ"><i class="bx bx-edit-alt"></i></button>`
+              : '';
+            const deleteBtn = isAdmin
+              ? `<button class="action-btn btn-delete" onclick="openConfirm('${s.id}')" title="លុប"><i class="bx bx-trash"></i></button>`
+              : '';
+            return `
             <tr>
               <td>${i + 1}</td>
               <td><strong>${s.name || '-'}</strong></td>
@@ -586,16 +687,9 @@ firebase.auth().onAuthStateChanged((user) => {
               <td>${statusBadge(s.status)}</td>
               <td>${s.teacher || '-'}</td>
               <td>${s.recorder || '-'}</td>
-              <td>
-                <button class="action-btn btn-edit" onclick="openEditModal('${s.id}')" title="កែប្រែ">
-                  <i class="bx bx-edit-alt"></i>
-                </button>
-                <button class="action-btn btn-delete" onclick="openConfirm('${s.id}')" title="លុប">
-                  <i class="bx bx-trash"></i>
-                </button>
-              </td>
-            </tr>
-          `).join('');
+              <td>${editBtn}${deleteBtn}</td>
+            </tr>`;
+          }).join('');
         }
         updateStats();
       }
@@ -648,31 +742,25 @@ firebase.auth().onAuthStateChanged((user) => {
         if (!grade) { showToast('សូមជ្រើសរើសថ្នាក់ទី!', true); return; }
 
         const data = {
-          name,
-          gender,
-          grade,
-          dob: document.getElementById('fDob').value,
-          room: document.getElementById('fRoom').value,
-          phone: document.getElementById('fPhone').value.trim(),
-          status: document.getElementById('fStatus').value,
-          teacher: document.getElementById('fTeacher').value.trim(),
-          recorder: document.getElementById('fRecorder').value.trim(),
+          name, gender, grade,
+          dob:      document.getElementById('fDob').value || '',
+          room:     document.getElementById('fRoom').value || '',
+          phone:    document.getElementById('fPhone').value.trim() || '',
+          status:   document.getElementById('fStatus').value,
+          teacher:  document.getElementById('fTeacher').value.trim() || '',
+          recorder: document.getElementById('fRecorder').value.trim() || '',
         };
 
         if (editingId) {
-          const idx = students.findIndex(s => s.id === editingId);
-          students[idx] = { ...students[idx], ...data };
-          showToast('កែប្រែបានជោគជ័យ! ✅');
+          studentsRef.child(editingId).update(data)
+            .then(() => { showToast('កែប្រែបានជោគជ័យ! ✅'); closeModal(); })
+            .catch(() => showToast('មានបញ្ហា! សូមព្យាយាមម្តងទៀត', true));
         } else {
-          data.id = 'id_' + Date.now();
           data.createdAt = new Date().toISOString();
-          students.push(data);
-          showToast('បន្ថែមសិស្សបានជោគជ័យ! ✅');
+          studentsRef.push(data)
+            .then(() => { showToast('បន្ថែមសិស្សបានជោគជ័យ! ✅'); closeModal(); })
+            .catch(() => showToast('មានបញ្ហា! សូមព្យាយាមម្តងទៀត', true));
         }
-
-        saveData();
-        renderTable();
-        closeModal();
       }
 
       // ====== DELETE ======
@@ -687,11 +775,9 @@ firebase.auth().onAuthStateChanged((user) => {
       }
 
       function confirmDelete() {
-        students = students.filter(s => s.id !== deletingId);
-        saveData();
-        renderTable();
-        closeConfirm();
-        showToast('លុបបានជោគជ័យ! 🗑️');
+        studentsRef.child(deletingId).remove()
+          .then(() => { showToast('លុបបានជោគជ័យ! 🗑️'); closeConfirm(); })
+          .catch(() => showToast('មានបញ្ហា! សូមព្យាយាមម្តងទៀត', true));
       }
 
       // ====== TOAST ======
@@ -820,7 +906,6 @@ firebase.auth().onAuthStateChanged((user) => {
       }
 
       function confirmImport() {
-        // Build mapping: colIndex -> fieldKey
         const mapping = {};
         fileColumns.forEach((_, i) => {
           const val = document.getElementById('map_' + i)?.value;
@@ -832,18 +917,20 @@ firebase.auth().onAuthStateChanged((user) => {
         }
 
         let added = 0;
+        const promises = [];
         importedRows.forEach(row => {
-          const s = { id: 'id_' + Date.now() + '_' + Math.random(), createdAt: new Date().toISOString(), status: 'សកម្ម' };
+          const s = { createdAt: new Date().toISOString(), status: 'សកម្ម' };
           Object.entries(mapping).forEach(([colIdx, field]) => {
             let val = row[colIdx];
             if (val !== undefined && val !== null) s[field] = String(val).trim();
           });
-          if (s.name) { students.push(s); added++; }
+          if (s.name) { promises.push(studentsRef.push(s)); added++; }
         });
 
-        saveData();
-        renderTable();
-        closeImportModal();
+        Promise.all(promises).then(() => {
+          closeImportModal();
+          showToast(`Import បានជោគជ័យ! បន្ថែម ${added} សិស្ស ✅`);
+        }).catch(() => showToast('មានបញ្ហា Import!', true));
         showToast(`Import បានជោគជ័យ! បន្ថែម ${added} សិស្ស ✅`);
       }
 
@@ -851,6 +938,34 @@ firebase.auth().onAuthStateChanged((user) => {
         document.getElementById('importModal').classList.remove('active');
         importedRows = [];
         fileColumns = [];
+      }
+
+      // ====== EXPORT EXCEL ======
+      function exportExcel() {
+        if (students.length === 0) { showToast('មិនមានទិន្នន័យ!', true); return; }
+
+        const headers = ['#','ឈ្មោះពេញ','ភេទ','ថ្ងៃខែឆ្នាំកំណើត','ថ្នាក់ទី','បន្ទប់','លេខទូរស័ព្ទ','ស្ថានភាព','គ្រូបន្ទុក','អ្នកបញ្ចូល'];
+        const rows = students.map((s, i) => [
+          i + 1,
+          s.name || '',
+          s.gender || '',
+          s.dob || '',
+          s.grade ? 'ថ្នាក់ទី ' + s.grade : '',
+          s.room || '',
+          s.phone || '',
+          s.status || '',
+          s.teacher || '',
+          s.recorder || '',
+        ]);
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+        ws['!cols'] = [4,22,8,16,10,8,14,22,18,18].map(w=>({wch:w}));
+        XLSX.utils.book_append_sheet(wb, ws, 'បញ្ជីសិស្ស');
+
+        const date = new Date().toLocaleDateString('km-KH').replace(/\//g,'-');
+        XLSX.writeFile(wb, `students_${date}.xlsx`);
+        showToast(`Export បានជោគជ័យ! ${students.length} សិស្ស ✅`);
       }
 
       // ====== DOWNLOAD TEMPLATE ======
@@ -876,45 +991,7 @@ firebase.auth().onAuthStateChanged((user) => {
         if (e.target === this) closeImportModal();
       });
 
-      // ====== INIT ======
-      renderTable();
-
-// កូដចាស់ៗរបស់ប្អូន...
-  // ...
-
-</script> ```
-
-### ជំហានទី ២៖ ផាស (Paste) កូដចូលនៅពីលើវា
-សូមយកកូដខាងក្រោមនេះ ទៅផាសចូល**នៅចំពីលើបន្ទាត់បិទ `</script>` នោះ**៖
-
-```javascript
-// === មុខងារទាញទិន្នន័យពី Cloud Firebase មកបង្ហាញក្នុងតារាង ===
-function loadDataFromFirebase() {
-  var tableBody = document.getElementById('studentTableBody');
-  
-  if (!tableBody) return; // ការពារកុំឱ្យ Error បើករកតារាងមិនឃើញ
-
-  // ទាញទិន្នន័យផ្ទាល់ពី Cloud Firebase Realtime Database
-  database.ref('students').on('value', (snapshot) => {
-    tableBody.innerHTML = ''; // សម្អាតតារាងចាស់ចោលមុននឹងបង្ហាញទិន្នន័យថ្មី
-    
-    snapshot.forEach((childSnapshot) => {
-      var student = childSnapshot.val();
-      
-      // បង្កើតជួរដេក (Row) បង្ហាញក្នុងតារាង HTML
-      var row = `<tr>
-                   <td>${student.name || ''}</td>
-                   <td>${student.gender || ''}</td>
-                   <td>${student.class || ''}</td>
-                 </tr>`;
-      tableBody.innerHTML += row;
-    });
-  });
-}
-
-
-
-      
+      // Firebase listener handles initial render automatically
     </script>
   </body>
 </html>
